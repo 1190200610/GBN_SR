@@ -15,7 +15,6 @@ public class UdpServer extends AbstractVerticle {
   public void start(Promise<Void> startPromise) throws Exception {
     DatagramSocket server_socket = vertx.createDatagramSocket(new DatagramSocketOptions());
     server_socket.listen(1234, "0.0.0.0", asyncResult -> {
-      System.out.println("开始建立连接");
       if (asyncResult.succeeded()) {
         // 获取本地服务地址和端口
         SocketAddress address = server_socket.localAddress();
@@ -29,13 +28,22 @@ public class UdpServer extends AbstractVerticle {
           int senderPort = sendAddress.port();
           System.out.println("客户端：" + senderHost+":"+senderPort);
           String result = packet.data().toString();
-          System.out.println("服务器接收到的数据：" + result);
-          server_socket.send("Message got", senderPort, senderHost);
+          MyDatagram datagram = parseData(result);
+          server_socket.send(Integer.toString(datagram.getSeq()), senderPort, senderHost);
         });
       } else {
         System.out.println("监听失败！");
       }
     });
   }
+
+
+  public static MyDatagram parseData(String result) {
+    String[] info = result.split(",");
+    int seq = Integer.parseInt(info[0].split("=")[1]);
+    String data = info[1].split("=")[1];
+    return new MyDatagram(seq, data);
+  }
+
 
 }
